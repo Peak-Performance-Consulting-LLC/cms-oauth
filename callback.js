@@ -1,4 +1,5 @@
 // callback.js (root)
+console.log('ORIGINS at runtime =', JSON.stringify(process.env.ORIGINS));
 const { AuthorizationCode } = require('simple-oauth2');
 const generateScript = require('./login_script.js'); // already in your repo
 
