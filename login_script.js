@@ -1,11 +1,29 @@
 const REQUIRED_ORIGIN_PATTERN = 
   /^((\*|([\w_-]{2,}))\.)*(([\w_-]{2,})\.)+(\w{2,})(\,((\*|([\w_-]{2,}))\.)*(([\w_-]{2,})\.)+(\w{2,}))*$/
 
-if (!process.env.ORIGINS.match(REQUIRED_ORIGIN_PATTERN)) {
-  throw new Error('process.env.ORIGINS MUST be comma separated list \
-    of origins that login can succeed on.')
+// Robust ORIGINS parsing: allow one-or-many, trim spaces, support fallbacks
+const raw =
+  (process.env.ORIGINS ||
+   process.env.ALLOWED_ORIGINS ||
+   process.env.ORIGIN ||
+   '').trim();
+
+const ORIGINS = raw
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// If nothing parsed, fail with a helpful message
+if (ORIGINS.length === 0) {
+  throw new Error(
+    'ORIGINS missing – set ORIGINS to comma-separated origins, e.g. ' +
+    'https://www.bookyourcarrental.com,https://bookyourcarrental.com'
+  );
 }
-const origins = process.env.ORIGINS.split(',')
+
+// (optional) debug
+console.log('login_script ORIGINS parsed =', ORIGINS);
+
 
 
 module.exports = (oauthProvider, message, content) => `
