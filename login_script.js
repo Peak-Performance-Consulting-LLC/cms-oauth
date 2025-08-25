@@ -47,7 +47,7 @@ module.exports = (oauthProvider, message, content) => `
   }
   function recieveMessage(e) {
     console.log("recieveMessage %o", e)
-    if (!contains(${JSON.stringify(origins)}, e.origin.replace('https://', 'http://').replace('http://', ''))) {
+    if (!contains(${JSON.stringify(ORIGINS)}, e.origin.replace('https://', 'http://').replace('http://', ''))) {
       console.log('Invalid origin: %s', e.origin);
       return;
     }
