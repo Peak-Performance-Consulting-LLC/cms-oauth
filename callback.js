@@ -1,5 +1,6 @@
-// OAuth "callback" endpoint (root handler)
+// callback.js (root)
 const { AuthorizationCode } = require('simple-oauth2');
+const generateScript = require('./login_script.js'); // already in your repo
 
 const config = {
   client: {
@@ -19,32 +20,26 @@ module.exports = async (req, res) => {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const code  = url.searchParams.get('code');
-    const state = url.searchParams.get('state') || '';
+    const state = url.searchParams.get('state') || ''; // site_id passed by CMS
 
     const base = process.env.BASE_URL || `https://${req.headers.host}`;
-    const redirectUri = `${base}/api/callback`;
+    const redirectUri = `${base}/api/callback`; // MUST match your GitHub OAuth App
 
     const tokenParams = { code, redirect_uri: redirectUri };
-
     const result = await client.getToken(tokenParams);
-    const token  = result.token; // { access_token, token_type, scope, ... }
 
-    // Post token back to CMS opener window (Decap listens for this)
-    const html = `
-      <html><body>
-        <script>
-          (function() {
-            const data = ${JSON.stringify({ token, provider: 'github', state })};
-            if (window.opener) window.opener.postMessage(data, '*');
-            window.close();
-          })();
-        </script>
-      </body></html>`;
+    // CMS expects the *access token string*, not the full object
+    const accessToken = result.token.access_token;
+
+    // This generates: authorization:github:success:{"token":"..."}
+    const script = generateScript('github', 'success', { token: accessToken, state });
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end(html);
-  } catch (err) {
-    console.error('callback error', err);
-    res.statusCode = 500;
-    res.end('OAuth callback error');
+    return res.end(script);
+  } catch (error) {
+    console.error('OAuth callback error', error);
+    const script = generateScript('github', 'error', JSON.stringify(error));
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.end(script);
   }
 };
